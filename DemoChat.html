@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asistente IA - Nocodia</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 100%;
+      margin: 0 auto;
+      background: white;
+    }
+    
+    .chat-header {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .chat-header h1 {
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+    
+    .chat-header p {
+      font-size: clamp(0.85rem, 3vw, 1rem);
+      opacity: 0.9;
+    }
+    
+    .messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: #f9fafb;
+    }
+    
+    .message {
+      display: flex;
+      margin-bottom: 16px;
+      animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .message.user {
+      justify-content: flex-end;
+    }
+    
+    .message-content {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      word-wrap: break-word;
+      font-size: clamp(0.9rem, 3.5vw, 1rem);
+      line-height: 1.5;
+    }
+    
+    .message.user .message-content {
+      background: var(--color-primary);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    
+    .message.assistant .message-content {
+      background: white;
+      color: #111827;
+      border: 1px solid #e5e7eb;
+      border-bottom-left-radius: 4px;
+    }
+    
+    .typing-indicator {
+      display: none;
+      padding: 12px 16px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 18px;
+      border-bottom-left-radius: 4px;
+      max-width: 80px;
+    }
+    
+    .typing-indicator.active {
+      display: block;
+    }
+    
+    .typing-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #9ca3af;
+      margin: 0 2px;
+      animation: typing 1.4s infinite;
+    }
+    
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    
+    @keyframes typing {
+      0%, 60%, 100% {
+        transform: translateY(0);
+      }
+      30% {
+        transform: translateY(-10px);
+      }
+    }
+    
+    .input-container {
+      padding: 16px;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .input-wrapper {
+      display: flex;
+      gap: 10px;
+      max-width: 100%;
+    }
+    
+    #userInput {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 24px;
+      font-size: clamp(0.9rem, 3.5vw, 1rem);
+      outline: none;
+      transition: border-color 0.3s;
+      font-family: inherit;
+    }
+    
+    #userInput:focus {
+      border-color: var(--color-primary);
+    }
+    
+    #sendButton {
+      padding: 12px 24px;
+      background: var(--color-primary);
+      color: white;
+      border: none;
+      border-radius: 24px;
+      font-weight: 700;
+      font-size: clamp(0.9rem, 3.5vw, 1rem);
+      cursor: pointer;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+    
+    #sendButton:hover:not(:disabled) {
+      background: var(--color-secondary);
+      transform: scale(1.02);
+    }
+    
+    #sendButton:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    
+    .welcome-message {
+      text-align: center;
+      padding: 40px 20px;
+      color: #6b7280;
+    }
+    
+    .welcome-message h2 {
+      font-size: clamp(1.2rem, 4vw, 1.6rem);
+      color: #111827;
+      margin-bottom: 10px;
+    }
+    
+    .branding {
+      text-align: center;
+      padding: 10px;
+      font-size: 11px;
+      color: #9ca3af;
+      background: #f9fafb;
+    }
+    
+    @media (min-width: 768px) {
+      .chat-container {
+        max-width: 800px;
+        height: 90vh;
+        margin: 5vh auto;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      }
+      
+      body {
+        overflow: auto;
+      }
+    }
+    
+    @media (max-width: 767px) {
+      .message-content {
+        max-width: 85%;
+      }
+      
+      #sendButton {
+        padding: 12px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <h1 id="chatTitle">🤖 Asistente IA</h1>
+      <p id="chatSubtitle">Tu solución inteligente</p>
+    </div>
+    
+    <div class="messages-container" id="messagesContainer">
+      <div class="welcome-message">
+        <h2>¡Bienvenido! 👋</h2>
+        <p id="welcomeText">Haz tu primera pregunta para comenzar</p>
+      </div>
+      <div class="typing-indicator" id="typingIndicator">
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+      </div>
+    </div>
+    
+    <div class="input-container">
+      <div class="input-wrapper">
+        <input 
+          type="text" 
+          id="userInput" 
+          placeholder="Escribe tu mensaje aquí..."
+          autocomplete="off"
+        >
+        <button id="sendButton">Enviar</button>
+      </div>
+    </div>
+    
+    <div class="branding" id="brandingFooter">
+      Powered by Nocodia
+    </div>
+  </div>
+
+  <script>
+    // ========================================================
+    // 🎯 CONFIGURACIÓN POR CLIENTE - SOLO CAMBIA ESTO
+    // ========================================================
+    const CLIENTE_CONFIG = {
+      // 1️⃣ INFORMACIÓN DEL CLIENTE
+      nombreCliente: "Demo Empresarial",
+      subtitulo: "Tu asistente inteligente",
+      mensajeBienvenida: "¿En qué puedo ayudarte hoy?",
+      
+      // 2️⃣ API KEY DE DIFY (Se deja vacía, la clave está en Cloudflare)
+      apiKey: "",
+      
+      // 3️⃣ PERSONALIZACIÓN DE COLORES (Opcional)
+      colorPrimario: "#0b75ff",    // Color principal del chat
+      colorSecundario: "#0052cc",  // Color secundario
+      
+      // 4️⃣ BRANDING EN EL FOOTER (Opcional)
+      mostrarBranding: true,       // true = mostrar, false = ocultar
+      textoFooter: "Powered by Nocodia"
+    };
+    // ========================================================
+    // ⚠️ NO MODIFICAR NADA MÁS ABAJO (A menos que sepas lo que haces)
+    // ========================================================
+
+    // Aplicar configuración visual
+    document.documentElement.style.setProperty('--color-primary', CLIENTE_CONFIG.colorPrimario);
+    document.documentElement.style.setProperty('--color-secondary', CLIENTE_CONFIG.colorSecundario);
+    document.getElementById('chatTitle').innerHTML = `🤖 ${CLIENTE_CONFIG.nombreCliente}`;
+    document.getElementById('chatSubtitle').textContent = CLIENTE_CONFIG.subtitulo;
+    document.getElementById('welcomeText').textContent = CLIENTE_CONFIG.mensajeBienvenida;
+    
+    const brandingFooter = document.getElementById('brandingFooter');
+    if (CLIENTE_CONFIG.mostrarBranding) {
+      brandingFooter.textContent = CLIENTE_CONFIG.textoFooter;
+    } else {
+      brandingFooter.style.display = 'none';
+    }
+
+// Configuración de API (Modificado para Cloudflare Worker)
+const API_CONFIG = {
+    apiKey: CLIENTE_CONFIG.apiKey,
+    // ✨ URL de tu Worker de Cloudflare, la cual actúa como proxy
+    apiUrl: 'https://dify-chat-proxy.jraul-garcia.workers.dev/', 
+    conversationId: null
+};
+
+    // Elementos del DOM
+    const messagesContainer = document.getElementById('messagesContainer');
+    const userInput = document.getElementById('userInput');
+    const sendButton = document.getElementById('sendButton');
+    const typingIndicator = document.getElementById('typingIndicator');
+
+    function addMessage(text, isUser = false) {
+      const welcomeMsg = messagesContainer.querySelector('.welcome-message');
+      if (welcomeMsg) {
+        welcomeMsg.remove();
+      }
+
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      contentDiv.textContent = text;
+      
+      messageDiv.appendChild(contentDiv);
+      messagesContainer.insertBefore(messageDiv, typingIndicator);
+      
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function showTyping() {
+      typingIndicator.classList.add('active');
+      scrollToBottom();
+    }
+
+    function hideTyping() {
+      typingIndicator.classList.remove('active');
+    }
+
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      
+      if (!message) return;
+      
+      // ⚠️ ESTE BLOQUE DE VERIFICACIÓN FUE ELIMINADO
+      // if (API_CONFIG.apiKey === 'app-XXXXXXXXXXXXXXXXX' || API_CONFIG.apiKey.length < 20) { ... }
+
+      userInput.value = '';
+      sendButton.disabled = true;
+      userInput.disabled = true;
+
+      addMessage(message, true);
+      showTyping();
+
+      try {
+        const response = await fetch(API_CONFIG.apiUrl, {
+          method: 'POST',
+          headers: {
+            // ❌ Encabezado Authorization ELIMINADO, el Worker lo añade
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            inputs: {},
+            query: message,
+            response_mode: 'blocking',
+            conversation_id: API_CONFIG.conversationId || '',
+            user: 'user-' + Date.now()
+          })
+        });
+
+        hideTyping();
+
+        if (!response.ok) {
+          // Si la respuesta no es OK, el error ahora vendrá del Worker o de Dify
+          throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.conversation_id) {
+          API_CONFIG.conversationId = data.conversation_id;
+        }
+
+        if (data.answer) {
+          addMessage(data.answer, false);
+        } else {
+          addMessage('Lo siento, no pude procesar tu mensaje. Intenta de nuevo.', false);
+        }
+
+      } catch (error) {
+        hideTyping();
+        console.error('Error:', error);
+        addMessage('❌ Error de conexión. Verifica la conexión del servidor proxy.', false);
+      } finally {
+        sendButton.disabled = false;
+        userInput.disabled = false;
+        userInput.focus();
+      }
+    }
+
+    sendButton.addEventListener('click', sendMessage);
+    
+    userInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+
+    window.addEventListener('load', () => {
+      userInput.focus();
+    });
+  </script>
+</body>
+</html>
