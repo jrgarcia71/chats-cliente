@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Dify - Asistente Profesional</title>
+    <style>
+        /* Estilos CSS para el chat */
+        body { font-family: 'Arial', sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .chat-container { width: 100%; max-width: 450px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; height: 80vh; overflow: hidden; }
+        .chat-header { background-color: #3b82f6; color: white; padding: 15px; text-align: center; font-size: 1.1em; font-weight: bold; }
+        .chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .message { padding: 10px 15px; border-radius: 18px; max-width: 80%; line-height: 1.4; word-wrap: break-word; }
+        .user-message { background-color: #dbeafe; color: #1e40af; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .ai-message { background-color: #e5e7eb; color: #374151; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .chat-input { display: flex; padding: 15px; border-top: 1px solid #e5e7eb; }
+        .chat-input input { flex-grow: 1; padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 20px; margin-right: 10px; font-size: 16px; outline: none; }
+        .chat-input button { padding: 10px 15px; background-color: #3b82f6; color: white; border: none; border-radius: 20px; cursor: pointer; font-weight: bold; transition: background-color 0.3s; }
+        .chat-input button:hover { background-color: #2563eb; }
+        .loading-dot { display: inline-block; width: 6px; height: 6px; margin: 0 2px; background-color: #374151; border-radius: 50%; animation: dot-flashing 1s infinite alternate; }
+        .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+        .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes dot-flashing { 0% { opacity: 0.2; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">Asistente de Dify (Proxy Seguro)</div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message ai-message">¡Hola Juan Raúl! Soy tu Asistente. Pregúntame sobre cualquier tema.</div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="userInput" placeholder="Escribe tu mensaje...">
+            <button id="sendButton" onclick="sendMessage()">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        const API_CONFIG = {
+            apiKey: '', // La clave es enviada por el Worker, no es necesaria aquí.
+            // *******************************************************************
+            // ¡IMPORTANTE! Reemplaza 'api.tudominio.com' con tu SUBDOMINIO REAL
+            // QUE APUNTE AL WORKER DE CLOUDFLARE.
+            // *******************************************************************
+            apiUrl: 'https://dify-chat-proxy.jraul-garcia.workers.dev/', // <<< CAMBIA ESTO POR TU DOMINIO PROFESIONAL
+            conversationId: null
+        };
+
+        const chatMessages = document.getElementById('chatMessages');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+
+        function appendMessage(sender, text) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            messageElement.classList.add(sender === 'user' ? 'user-message' : 'ai-message');
+            messageElement.innerHTML = sender === 'ai' && text.includes('<br>') ? text : text.replace(/\n/g, '<br>');
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll
+        }
+
+        function showLoading() {
+            const loadingElement = document.createElement('div');
+            loadingElement.classList.add('message', 'ai-message', 'loading-indicator');
+            loadingElement.innerHTML = '<span>Escribiendo</span><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span>';
+            chatMessages.appendChild(loadingElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeLoading() {
+            const loadingIndicator = document.querySelector('.loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.remove();
+            }
+        }
+
+        async function sendMessage() {
+            const query = userInput.value.trim();
+            if (!query) return;
+
+            // 1. Mostrar mensaje de usuario y deshabilitar entrada
+            appendMessage('user', query);
+            userInput.value = '';
+            userInput.disabled = true;
+            sendButton.disabled = true;
+
+            // 2. Mostrar indicador de carga
+            showLoading();
+
+            try {
+                const response = await fetch(API_CONFIG.apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        inputs: {},
+                        query: query,
+                        response_mode: 'blocking', // Cambiamos a blocking para una respuesta única y estable
+                        conversation_id: API_CONFIG.conversationId || '',
+                        user: 'juan-raul-user-id' 
+                    }),
+                });
+
+                removeLoading();
+
+                if (!response.ok) {
+                    throw new Error(`Error en el Worker: ${response.statusText}. Consulta la consola F12.`);
+                }
+
+                const data = await response.json();
+
+                if (data.answer) {
+                    appendMessage('ai', data.answer);
+                    // Actualizar el conversationId si es nuevo
+                    if (data.conversation_id && !API_CONFIG.conversationId) {
+                        API_CONFIG.conversationId = data.conversation_id;
+                    }
+                } else if (data.error) {
+                    appendMessage('ai', `[ERROR DIFY]: ${data.error}`);
+                } else {
+                    appendMessage('ai', '[ERROR]: Respuesta inesperada del servidor.');
+                }
+
+            } catch (error) {
+                removeLoading();
+                console.error('Fetch Error:', error);
+                appendMessage('ai', `[ERROR DE CONEXIÓN]: El servidor Worker no respondió. ${error.message}`);
+            } finally {
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.focus();
+            }
+        }
+
+        // Permitir envío con la tecla Enter
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
