@@ -37,11 +37,11 @@
 
     <script>
         const API_CONFIG = {
-            apiKey: '', // La clave es enviada por el Worker, no es necesaria aquí.
+            apiKey: '', 
             // *******************************************************************
-            // ¡URL PROFESIONAL FINAL LISTA!
+            // USANDO URL DE WORKER ESTABLE PARA EVITAR EL NXDOMAIN
             // *******************************************************************
-            apiUrl: 'https://api.nocodia.net', // <<< ESTA ES LA URL DE TU PROXY SEGURO
+            apiUrl: 'https://dify-chat-proxy.jraul-garcia.workers.dev/', 
             conversationId: null
         };
 
@@ -87,7 +87,7 @@
             showLoading();
 
             try {
-                // Usamos la URL profesional: https://api.nocodia.net
+                // Usamos la URL de Worker estable para evitar el fallo DNS
                 const response = await fetch(API_CONFIG.apiUrl, {
                     method: 'POST',
                     headers: {
@@ -96,7 +96,7 @@
                     body: JSON.stringify({
                         inputs: {},
                         query: query,
-                        response_mode: 'blocking', // Cambiamos a blocking para una respuesta única y estable
+                        response_mode: 'blocking', 
                         conversation_id: API_CONFIG.conversationId || '',
                         user: 'juan-raul-user-id' 
                     }),
@@ -112,7 +112,6 @@
 
                 if (data.answer) {
                     appendMessage('ai', data.answer);
-                    // Actualizar el conversationId si es nuevo
                     if (data.conversation_id && !API_CONFIG.conversationId) {
                         API_CONFIG.conversationId = data.conversation_id;
                     }
