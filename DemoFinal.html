@@ -39,10 +39,9 @@
         const API_CONFIG = {
             apiKey: '', // La clave es enviada por el Worker, no es necesaria aquí.
             // *******************************************************************
-            // ¡IMPORTANTE! Reemplaza 'api.tudominio.com' con tu SUBDOMINIO REAL
-            // QUE APUNTE AL WORKER DE CLOUDFLARE.
+            // ¡URL PROFESIONAL FINAL LISTA!
             // *******************************************************************
-            apiUrl: 'https://dify-chat-proxy.jraul-garcia.workers.dev/', // <<< CAMBIA ESTO POR TU DOMINIO PROFESIONAL
+            apiUrl: 'https://api.nocodia.net', // <<< ESTA ES LA URL DE TU PROXY SEGURO
             conversationId: null
         };
 
@@ -88,6 +87,7 @@
             showLoading();
 
             try {
+                // Usamos la URL profesional: https://api.nocodia.net
                 const response = await fetch(API_CONFIG.apiUrl, {
                     method: 'POST',
                     headers: {
@@ -105,7 +105,7 @@
                 removeLoading();
 
                 if (!response.ok) {
-                    throw new Error(`Error en el Worker: ${response.statusText}. Consulta la consola F12.`);
+                    throw new Error(`Error ${response.status}: Consulta la consola F12.`);
                 }
 
                 const data = await response.json();
@@ -125,7 +125,7 @@
             } catch (error) {
                 removeLoading();
                 console.error('Fetch Error:', error);
-                appendMessage('ai', `[ERROR DE CONEXIÓN]: El servidor Worker no respondió. ${error.message}`);
+                appendMessage('ai', `[ERROR DE CONEXIÓN]: El servidor no respondió. ${error.message}`);
             } finally {
                 userInput.disabled = false;
                 sendButton.disabled = false;
