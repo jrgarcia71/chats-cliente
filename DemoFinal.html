@@ -3,11 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Dify - Asistente Profesional</title>
+    <title>Asistente de Inteligencia Artificial</title>
     <style>
-        /* Estilos CSS para el chat */
-        body { font-family: 'Arial', sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .chat-container { width: 100%; max-width: 450px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; height: 80vh; overflow: hidden; }
+        /* Estilos CSS - Máxima estabilidad en Google Sites (Garantiza altura fija) */
+        body { 
+            font-family: 'Arial', sans-serif; 
+            background-color: #f4f7f6; 
+            margin: 0; 
+            padding: 0; 
+            /* Importante: Mínima altura para evitar conflictos con el iframe de Google Sites */
+            min-height: 100%; 
+        }
+        .chat-container { 
+            width: 100%; 
+            max-width: 450px; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); 
+            display: flex; 
+            flex-direction: column; 
+            height: 600px; /* Altura Fija y Elegante para PC/Tablet */
+            overflow: hidden; 
+            margin: 20px auto; /* Centrado con margen vertical visible */
+        }
+        /* Ajuste para móviles: Ocupar más altura y ancho */
+        @media (max-width: 600px) {
+            .chat-container {
+                height: 90vh; /* Ocupa casi toda la pantalla del móvil */
+                max-width: 100%;
+                border-radius: 0; /* Estilo de app móvil sin esquinas */
+                margin: 0;
+            }
+        }
+
         .chat-header { background-color: #3b82f6; color: white; padding: 15px; text-align: center; font-size: 1.1em; font-weight: bold; }
         .chat-messages { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .message { padding: 10px 15px; border-radius: 18px; max-width: 80%; line-height: 1.4; word-wrap: break-word; }
@@ -25,7 +53,7 @@
 </head>
 <body>
     <div class="chat-container">
-        <div class="chat-header">Asistente de Dify (Proxy Seguro)</div>
+        <div class="chat-header">🤖 Asistente Empresarial de IA</div>
         <div class="chat-messages" id="chatMessages">
             <div class="message ai-message">¡Hola Juan Raúl! Soy tu Asistente. Pregúntame sobre cualquier tema.</div>
         </div>
@@ -38,11 +66,10 @@
     <script>
         const API_CONFIG = {
             apiKey: '', 
-            // *******************************************************************
-            // USANDO URL DE WORKER ESTABLE PARA EVITAR EL NXDOMAIN
-            // *******************************************************************
             apiUrl: 'https://dify-chat-proxy.jraul-garcia.workers.dev/', 
-            conversationId: null
+            conversationId: null,
+            // GENERACIÓN DE ID ÚNICO POR SESIÓN PARA GARANTIZAR LA PRIVACIDAD DE CADA CLIENTE
+            userId: 'user-' + Math.random().toString(36).substring(2, 9)
         };
 
         const chatMessages = document.getElementById('chatMessages');
@@ -55,7 +82,7 @@
             messageElement.classList.add(sender === 'user' ? 'user-message' : 'ai-message');
             messageElement.innerHTML = sender === 'ai' && text.includes('<br>') ? text : text.replace(/\n/g, '<br>');
             chatMessages.appendChild(messageElement);
-            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
         function showLoading() {
@@ -77,17 +104,14 @@
             const query = userInput.value.trim();
             if (!query) return;
 
-            // 1. Mostrar mensaje de usuario y deshabilitar entrada
             appendMessage('user', query);
             userInput.value = '';
             userInput.disabled = true;
             sendButton.disabled = true;
 
-            // 2. Mostrar indicador de carga
             showLoading();
 
             try {
-                // Usamos la URL de Worker estable para evitar el fallo DNS
                 const response = await fetch(API_CONFIG.apiUrl, {
                     method: 'POST',
                     headers: {
@@ -98,7 +122,7 @@
                         query: query,
                         response_mode: 'blocking', 
                         conversation_id: API_CONFIG.conversationId || '',
-                        user: 'juan-raul-user-id' 
+                        user: API_CONFIG.userId // Usa el ID de sesión único
                     }),
                 });
 
@@ -116,7 +140,7 @@
                         API_CONFIG.conversationId = data.conversation_id;
                     }
                 } else if (data.error) {
-                    appendMessage('ai', `[ERROR DIFY]: ${data.error}`);
+                    appendMessage('ai', `[ERROR]: El backend del asistente devolvió un error.`);
                 } else {
                     appendMessage('ai', '[ERROR]: Respuesta inesperada del servidor.');
                 }
@@ -124,7 +148,7 @@
             } catch (error) {
                 removeLoading();
                 console.error('Fetch Error:', error);
-                appendMessage('ai', `[ERROR DE CONEXIÓN]: El servidor no respondió. ${error.message}`);
+                appendMessage('ai', `[ERROR DE CONEXIÓN]: El servidor no respondió. Por favor, verifica tu red.`);
             } finally {
                 userInput.disabled = false;
                 sendButton.disabled = false;
@@ -132,7 +156,6 @@
             }
         }
 
-        // Permitir envío con la tecla Enter
         userInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendMessage();
